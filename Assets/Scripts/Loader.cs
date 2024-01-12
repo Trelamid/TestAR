@@ -112,6 +112,8 @@ public class Loader : MonoBehaviour
         {
             FilesPath.modelPath = savePath;
             // GameObject model = Importer.LoadFromFile(savePath);
+            while (!File.Exists(FilesPath.imagePath) || !File.Exists(FilesPath.modelPath))
+                yield return new WaitForSeconds(0.5f);
             _downloadSuccess++;
         }
 
@@ -119,7 +121,7 @@ public class Loader : MonoBehaviour
     private void WriteImageOnDisk(Sprite _sprite)
     {
         byte[] textureBytes = _sprite.texture.EncodeToPNG();
-        string savePath = string.Format("{0}/{1}.png", Application.streamingAssetsPath, "targetImage");
+        string savePath = string.Format("{0}/{1}.png", Application.dataPath+"/Resources", "targetImage");
         File.WriteAllBytes(savePath, textureBytes);
         FilesPath.imagePath = savePath;
     }
