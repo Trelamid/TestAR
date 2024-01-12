@@ -98,7 +98,7 @@ public class Loader : MonoBehaviour
     private IEnumerator LoadModelFromWeb() {
  
         UnityWebRequest request = new UnityWebRequest(_modelUrl);
-        string savePath = string.Format("{0}/{1}.glb", Application.streamingAssetsPath, "targetModel");
+        string savePath = Path.Combine(Application.persistentDataPath, "targetModel.glb");
         request.downloadHandler = new DownloadHandlerFile(savePath);
         yield return request.SendWebRequest();
         if (request.result == UnityWebRequest.Result.ConnectionError 
@@ -121,7 +121,7 @@ public class Loader : MonoBehaviour
     private void WriteImageOnDisk(Sprite _sprite)
     {
         byte[] textureBytes = _sprite.texture.EncodeToPNG();
-        string savePath = string.Format("{0}/{1}.png", Application.dataPath+"/Resources", "targetImage");
+        string savePath = Path.Combine(Application.persistentDataPath, "targetImage.png");
         File.WriteAllBytes(savePath, textureBytes);
         FilesPath.imagePath = savePath;
     }

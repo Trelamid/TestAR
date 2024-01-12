@@ -1,0 +1,21 @@
+{
+    "name": "ASM",
+    "rootNamespace": "",
+    "references": [
+        "GUID:a9420e37d7990b54abdef6688edbe313",
+        "GUID:7f759c464cb5ea8448d441f13b57aec0",
+        "GUID:774f0e7b520e24644b448f5ac7fa5d94",
+        "GUID:92703082f92b41ba80f0d6912de66115",
+        "GUID:8b0c2853a940d4fd9979bac438eb5bf3",
+        "GUID:6123f5c425de94177b6904cab29dda85"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
