@@ -18,43 +18,17 @@ public class Loader : MonoBehaviour
     [SerializeField]private string _modelUrl;
     [SerializeField]private GameObject _loadingUI;
     [SerializeField]private GameObject _failedUI;
-    private Action<bool> _connectionCallback;
+    [SerializeField]private GameObject _startUI;
     private int _downloadSuccess;
 
-    // Start is called before the first frame update
-    void Start()
-    {
-        _connectionCallback += b =>
-        {
-            switch (b)
-            {
-                case true :
-                    StartCoroutine(SuccessToConnect());
-                    break;
-                case false :
-                    FailedToConnect();
-                    break;
-            } 
-        };
-        StartCoroutine(CheckInternetConnection(_connectionCallback));
-    }
-
-    public static IEnumerator CheckInternetConnection(Action<bool> syncResult)
-    {
-        const string echoServer = "https://google.com";
-
-        bool result;
-        using (var request = UnityWebRequest.Head(echoServer))
-        {
-            request.timeout = 3;
-            yield return request.SendWebRequest();
-            result = request.result == UnityWebRequest.Result.Success;
-        }
-        syncResult.Invoke(result);
-    }
+    
     public void Reload()
     {
-        StartCoroutine(CheckInternetConnection(_connectionCallback));
+        
+        _loadingUI.SetActive(true);
+        _failedUI.SetActive(false);
+        _startUI.SetActive(false);
+        StartCoroutine(DownloadFiles());
     }
     void FailedToConnect()
     {
@@ -62,7 +36,7 @@ public class Loader : MonoBehaviour
         _failedUI.SetActive(true);
     }
 
-    IEnumerator SuccessToConnect()
+    IEnumerator DownloadFiles()
     {
         yield return LoadTextureFromWeb();
         yield return LoadModelFromWeb();
@@ -77,22 +51,22 @@ public class Loader : MonoBehaviour
     IEnumerator LoadTextureFromWeb()
     {
         UnityWebRequest www = UnityWebRequestTexture.GetTexture(_imageUrl);
+        www.timeout = 10;
         yield return www.SendWebRequest();
          
         _loadingUI.SetActive(true);
         _failedUI.SetActive(false);
-        if (www.result == UnityWebRequest.Result.ConnectionError 
-            || www.result == UnityWebRequest.Result.DataProcessingError 
-            || www.result == UnityWebRequest.Result.ProtocolError)
-        {
-            FailedToConnect();
-            Debug.LogError("Error: " + www.error);
-        }
-        else
+
+        if(www.result == UnityWebRequest.Result.Success)
         {
             Texture2D loadedTexture = DownloadHandlerTexture.GetContent(www);
             WriteImageOnDisk(Sprite.Create(loadedTexture, new Rect(0f, 0f, loadedTexture.width, loadedTexture.height), Vector2.zero));
             _downloadSuccess++;
+        }
+        else
+        {
+            FailedToConnect();
+            Debug.LogError("Error: " + www.error);
         }
     }
     private IEnumerator LoadModelFromWeb() {
@@ -101,20 +75,17 @@ public class Loader : MonoBehaviour
         string savePath = Path.Combine(Application.persistentDataPath, "targetModel.glb");
         request.downloadHandler = new DownloadHandlerFile(savePath);
         yield return request.SendWebRequest();
-        if (request.result == UnityWebRequest.Result.ConnectionError 
-            || request.result == UnityWebRequest.Result.DataProcessingError 
-            || request.result == UnityWebRequest.Result.ProtocolError)
-        {
-            FailedToConnect();
-            Debug.LogError("Error: " + request.error);
-        }
-        else if (request.result == UnityWebRequest.Result.Success)
+        if (request.result == UnityWebRequest.Result.Success)
         {
             FilesPath.modelPath = savePath;
-            // GameObject model = Importer.LoadFromFile(savePath);
             while (!File.Exists(FilesPath.imagePath) || !File.Exists(FilesPath.modelPath))
                 yield return new WaitForSeconds(0.5f);
             _downloadSuccess++;
+        }
+        else
+        {
+            FailedToConnect();
+            Debug.LogError("Error: " + request.error);
         }
 
     }

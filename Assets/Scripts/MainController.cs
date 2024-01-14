@@ -1,59 +1,69 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using Lean.Common;
+using Lean.Touch;
 using Siccity.GLTFUtility;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using UnityEngine.XR.ARFoundation;
 using UnityEngine.XR.ARSubsystems;
-// using UnityEditor.XR.ARSubsystems;
 
 public class MainController : MonoBehaviour
 {
     [SerializeField]private XRReferenceImageLibrary _xrReferenceImageLibrary;
-    // private ARTrackedImageManager _trackedImageManager;
+    private ARTrackedImageManager trackImageManager;
     private MutableRuntimeReferenceImageLibrary _mutableLibrary;
-    
+    private GameObject _spawnedModel = null;
+    [SerializeField]private GameObject _target;
 
     void Awake()
     {
-        // _trackedImageManager = GetComponent<ARTrackedImageManager>();
-        var trackImageManager = gameObject.AddComponent<ARTrackedImageManager>();
+        trackImageManager = gameObject.GetComponent<ARTrackedImageManager>();
         trackImageManager.referenceLibrary = trackImageManager.CreateRuntimeLibrary(_xrReferenceImageLibrary);
-        trackImageManager.maxNumberOfMovingImages = 3;
-        // trackImageManager.trackedImagePrefab = prefabOnTrack;
 
         trackImageManager.enabled = true;
-
-        // trackImageManager.trackedImagesChanged += OnTrackedImagesChanged;
-        
-        // var runtimeReferenceImageLibrary = trackImageManager.referenceLibrary as MutableRuntimeReferenceImageLibrary;
         _mutableLibrary = trackImageManager.referenceLibrary as MutableRuntimeReferenceImageLibrary;
-        // _mutableLibrary = trackImageManager.CreateRuntimeLibrary() as MutableRuntimeReferenceImageLibrary;
-        // RuntimeReferenceImageLibrary runtimeLibrary = _trackedImageManager.CreateRuntimeLibrary();
-        // _xrReferenceImageLibrary = runtimeLibrary as MutableRuntimeReferenceImageLibrary;
+
 
         GameObject model = null;
         if (File.Exists(FilesPath.modelPath))
-             model = Importer.LoadFromFile(FilesPath.modelPath);
-        Texture2D image = LoadPNG(FilesPath.imagePath);
-        // Texture2D image = LoadPNG(Application.dataPath+"/Resources"+"/targetImage.png");
-        // Texture2D image = Resources.Load<Texture2D>("targetImage");
-        // Texture2D image = FilesPath._Texture2D;
-        
+        {
+            model = Importer.LoadFromFile(FilesPath.modelPath);
+            model.transform.localScale = new Vector3(0.05f, 0.05f, 0.05f);
+            model.tag = "Cake";
+            model.AddComponent<BoxCollider>();
+            var leanSel = model.AddComponent<LeanSelectable>();
+            model.AddComponent<LeanTwistRotateAxis>();
+            model.AddComponent<LeanPinchScale>();
+        }
+
+        Texture2D image = null;
+        if (File.Exists(FilesPath.imagePath))
+        {
+            image = LoadPNG(FilesPath.imagePath);
+        }
+
         if (!model || !image)
         {
             SceneManager.LoadScene(0);
             return;
         }
-        Debug.Log(image.name +" : "+image.format+" : " + image.height );
-        // Debug.Log(image2.name +" : "+image2.format+" : " + image2.height );
 
-        trackImageManager.trackedImagePrefab = model;
-        _mutableLibrary.ScheduleAddImageWithValidationJob(image, "target", 0.1f);
+        model.transform.SetParent(_target.transform);
+        trackImageManager.trackedImagePrefab = _target;
+        try
+        {
+            _mutableLibrary.ScheduleAddImageWithValidationJob(image, "target", 0.1f);
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("ERROR : "+e);
+        }
     }
-    
+
     public Texture2D LoadPNG(string filePath) {
 
         Texture2D tex = null;
@@ -61,7 +71,7 @@ public class MainController : MonoBehaviour
 
         if (File.Exists(filePath)) 	{
             fileData = File.ReadAllBytes(filePath);
-            tex = new Texture2D(352, 452,TextureFormat.RGBA64, true);
+            tex = new Texture2D(352, 452,TextureFormat.RGBA32, false);
             tex.LoadImage(fileData); //..this will auto-resize the texture dimensions.
         }
         return tex;
